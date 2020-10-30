@@ -93,7 +93,7 @@ type cpuState int
 
 type Comp struct {
 	memory []int
-	pc     int // program counter / instruction pointer
+	ip     int // instruction pointer
 	rbo    int // relative base offset
 	state  cpuState
 	error  bool // True if CPU is halted due to error
@@ -105,7 +105,7 @@ type Comp struct {
 func NewComp(name string, memsize int, prog []int, in Getter, out Putter) *Comp {
 	m := make([]int, memsize)
 	copy(m, prog)
-	return &Comp{memory: m, pc: 0, state: RUNNING, name: name, in: in, out: out}
+	return &Comp{memory: m, ip: 0, state: RUNNING, name: name, in: in, out: out}
 }
 
 func (c *Comp) GetName() string {
@@ -144,7 +144,7 @@ func (c *Comp) decodeInstruction(i int) *instruction {
 }
 
 func (c *Comp) getInst() int {
-	return c.GetMemory(c.pc)
+	return c.GetMemory(c.ip)
 }
 
 func (c *Comp) GetMemory(addr int) int {
@@ -156,11 +156,11 @@ func (c *Comp) GetMemory(addr int) int {
 func (c *Comp) getLocation(i *instruction, n int) int {
 	switch i.modes[n-1] {
 	case POSITION:
-		return c.GetMemory(c.pc + n)
+		return c.GetMemory(c.ip + n)
 	case RELATIVE:
-		return c.GetMemory(c.pc+n) + c.rbo
+		return c.GetMemory(c.ip+n) + c.rbo
 	}
-	return c.memory[c.pc+n]
+	return c.memory[c.ip+n]
 }
 
 // Retrieve operand n for instruction i.
@@ -168,14 +168,14 @@ func (c *Comp) getLocation(i *instruction, n int) int {
 func (c *Comp) getOperand(i *instruction, n int) int {
 	switch i.modes[n-1] {
 	case IMMEDIATE:
-		return c.GetMemory(c.pc + n)
+		return c.GetMemory(c.ip + n)
 	case POSITION:
-		return c.GetMemory(c.GetMemory(c.pc + n))
+		return c.GetMemory(c.GetMemory(c.ip + n))
 	case RELATIVE:
-		return c.GetMemory(c.GetMemory(c.pc+n) + c.rbo)
+		return c.GetMemory(c.GetMemory(c.ip+n) + c.rbo)
 	}
 
-	return c.memory[c.pc+n]
+	return c.memory[c.ip+n]
 }
 
 func (c *Comp) Break() {
@@ -199,7 +199,7 @@ func (c *Comp) PrintMemory() {
 	var cnt int
 	for i := 0; i < len(c.memory); i++ {
 		var ptr string
-		if i == c.pc {
+		if i == c.ip {
 			ptr = "<"
 		}
 		fmt.Printf("%04d: %08d%s\t", i, c.memory[i], ptr)
@@ -222,12 +222,12 @@ func (c *Comp) Step() {
 	switch i.op {
 	case JIT:
 		if c.getOperand(i, 1) != 0 {
-			c.pc = c.getOperand(i, 2)
+			c.ip = c.getOperand(i, 2)
 			branched = true
 		}
 	case JIF:
 		if c.getOperand(i, 1) == 0 {
-			c.pc = c.getOperand(i, 2)
+			c.ip = c.getOperand(i, 2)
 			branched = true
 		}
 	case LT:
@@ -259,6 +259,6 @@ func (c *Comp) Step() {
 	}
 
 	if !branched {
-		c.pc += i.nOperands + 1 // Always 1 address beyond the number of operands
+		c.ip += i.nOperands + 1 // Always 1 address beyond the number of operands
 	}
 }
