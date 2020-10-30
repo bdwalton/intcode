@@ -144,10 +144,10 @@ func (c *Comp) decodeInstruction(i int) *instruction {
 }
 
 func (c *Comp) getInst() int {
-	return c.getMemory(c.pc)
+	return c.GetMemory(c.pc)
 }
 
-func (c *Comp) getMemory(addr int) int {
+func (c *Comp) GetMemory(addr int) int {
 	return c.memory[addr]
 }
 
@@ -156,9 +156,9 @@ func (c *Comp) getMemory(addr int) int {
 func (c *Comp) getLocation(i *instruction, n int) int {
 	switch i.modes[n-1] {
 	case POSITION:
-		return c.getMemory(c.pc + n)
+		return c.GetMemory(c.pc + n)
 	case RELATIVE:
-		return c.getMemory(c.pc+n) + c.rbo
+		return c.GetMemory(c.pc+n) + c.rbo
 	}
 	return c.memory[c.pc+n]
 }
@@ -168,11 +168,11 @@ func (c *Comp) getLocation(i *instruction, n int) int {
 func (c *Comp) getOperand(i *instruction, n int) int {
 	switch i.modes[n-1] {
 	case IMMEDIATE:
-		return c.getMemory(c.pc + n)
+		return c.GetMemory(c.pc + n)
 	case POSITION:
-		return c.getMemory(c.getMemory(c.pc + n))
+		return c.GetMemory(c.GetMemory(c.pc + n))
 	case RELATIVE:
-		return c.getMemory(c.getMemory(c.pc+n) + c.rbo)
+		return c.GetMemory(c.GetMemory(c.pc+n) + c.rbo)
 	}
 
 	return c.memory[c.pc+n]
